@@ -1,0 +1,15 @@
+[jenkins-controller]
+<private-ip-address>
+
+[jenkins-controller:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=/opt/devops_workshop.pem
+ansible_host_key_checking=false
+
+[jenkins-builder]
+<private-ip-address>
+
+[jenkins-builder:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=/opt/devops_workshop.pem
+ansible_host_key_checking=false

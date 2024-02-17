@@ -1,6 +1,6 @@
 
 # Setup Ansible
-1. Install ansibe on Ubuntu 22.04 
+1. Install ansible on Ubuntu 22.04 
    ```sh 
    sudo apt update
    sudo apt install software-properties-common -y

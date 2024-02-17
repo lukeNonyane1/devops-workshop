@@ -1,0 +1,35 @@
+---
+- hosts: jenkins-controller
+  become: true
+  tasks:
+    - name: add jenkins key
+      ansible.builtin.apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present
+
+    - name: Add specified repository into sources list
+      ansible.builtin.apt_repository:
+        repo: 'deb-src https://pkg.jenkins.io/debian-stable binary/'
+        state: present
+
+    - name: Install java
+      ansible.builtin.apt:
+        name: openjdk-17-jre
+        state: present
+
+    - name: Install jenkins
+      ansible.builtin.apt:
+        name: jenkins
+        state: present
+
+    - name: Start service jenkins, if not started
+      ansible.builtin.service:
+        name: jenkins
+        state: started
+
+    - name: Enable service jenkins, and not touch the state
+      ansible.builtin.service:
+        name: jenkins
+        enabled: yes
+
+
