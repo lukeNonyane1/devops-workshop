@@ -2,14 +2,17 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_instance" "web" {
+resource "aws_instance" "demo-server" {
   ami           = "ami-0c7217cdde317cfec" # ubuntu 22
   instance_type = "t2.micro"
   key_name      = "devops_workshop"
   # security_groups = [ "demo-sg" ]
   vpc_security_group_ids = [ aws_security_group.demo-sg.id ]
   subnet_id = aws_subnet.devops-workshop-subnet1.id
-  for_each = toset(["jenkins-controller", "jenkins-builder", "ansible-controller"])
+for_each = toset(["jenkins-controller", "jenkins-builder", "ansible-controller"])
+  tags = {
+    "Name" = "${each.key}"
+  }
 }
 
 # Networking
