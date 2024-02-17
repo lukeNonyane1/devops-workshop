@@ -1,21 +1,37 @@
 ---
-- hosts: jenkins-controller
+- name: Jenkins controller setup
+  hosts: jenkins-controller
   become: true
   tasks:
-    - name: add jenkins key
-      ansible.builtin.apt_key:
-        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-        state: present
-
-    - name: Add specified repository into sources list
-      ansible.builtin.apt_repository:
-        repo: 'deb-src https://pkg.jenkins.io/debian-stable binary/'
-        state: present
-
-    - name: Install java
+    - name: Update all packages to latest
       ansible.builtin.apt:
-        name: openjdk-17-jre
+        name: "*"
+        state: latest
+
+    - name: Download jenkins key
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add jenkins repo
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/
         state: present
+        filename: jenkins.list
+
+    - name: Update all packages to latest
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+
+    - name: Install fontconfig
+      ansible.builtin.shell: |
+        apt install fontconfig -y
+    
+    - name: Install java
+      ansible.builtin.shell: |
+        apt install openjdk-17-jre -y
+        java -version
 
     - name: Install jenkins
       ansible.builtin.apt:
@@ -23,13 +39,13 @@
         state: present
 
     - name: Start service jenkins, if not started
-      ansible.builtin.service:
+      ansible.builtin.systemd_service:
         name: jenkins
         state: started
 
-    - name: Enable service jenkins, and not touch the state
-      ansible.builtin.service:
+    - name: Enable service jenkins
+      ansible.builtin.systemd_service:
         name: jenkins
-        enabled: yes
+        enabled: true
 
 

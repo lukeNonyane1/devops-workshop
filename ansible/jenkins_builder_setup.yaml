@@ -1,0 +1,34 @@
+---
+- name: Setup jenkins builder node
+  hosts: jenkins-builder
+  become: true
+  tasks:
+    - name: Update ubuntu repo and packages
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+        cache_valid_time: 3600
+
+    - name: Install fontconfig - java dependecy
+      ansible.builtin.shell: |
+        apt install fontconfig -y
+    
+    - name: Install java
+      ansible.builtin.shell: |
+        apt install openjdk-17-jre -y
+        java -version
+
+    - name: Download Maven package
+      ansible.builtin.get_url:
+        url: https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
+        dest: /opt
+
+    - name: Unarchive a maven file that is already on the remote machine
+      ansible.builtin.unarchive:
+        src: /opt/apache-maven-3.9.6-bin.tar.gz
+        dest: /opt
+        remote_src: yes
+
+    - name: Add mvn to bash path
+      ansible.builtin.shell: |
+        export PATH=$PATH:/opt/apache-maven-3.9.6/bin
