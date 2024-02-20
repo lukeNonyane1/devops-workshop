@@ -9,7 +9,20 @@ resource "aws_instance" "demo-server" {
   # security_groups = [ "demo-sg" ]
   vpc_security_group_ids = [ aws_security_group.demo-sg.id ]
   subnet_id = aws_subnet.devops-workshop-subnet1.id
-for_each = toset(["jenkins-controller", "jenkins-builder", "ansible-controller"])
+for_each = toset(["jenkins-controller","ansible-controller"])
+  tags = {
+    "Name" = "${each.key}"
+  }
+}
+
+resource "aws_instance" "builder" {
+  ami           = "ami-0c7217cdde317cfec" # ubuntu 22
+  instance_type = "t2.medium"
+  key_name      = "devops_workshop"
+  # security_groups = [ "demo-sg" ]
+  vpc_security_group_ids = [ aws_security_group.demo-sg.id ]
+  subnet_id = aws_subnet.devops-workshop-subnet1.id
+for_each = toset(["jenkins-builder"])
   tags = {
     "Name" = "${each.key}"
   }
@@ -41,6 +54,14 @@ resource "aws_vpc_security_group_ingress_rule" "allow_8080" {
   from_port         = 8080
   ip_protocol       = "tcp"
   to_port           = 8080
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_local" {
+  security_group_id = aws_security_group.demo-sg.id
+  cidr_ipv4         = aws_vpc.devops-workshop-vpc.cidr_block
+  from_port         = 0
+  ip_protocol       = "tcp"
+  to_port           = 0
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
