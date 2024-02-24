@@ -39,6 +39,17 @@
         state: present
 
     - name: Start docker service
-      ansible.builtin.service:
+      ansible.builtin.systemd_service:
         name: docker
         state: started
+
+    - name: Enable docker service on boot
+      ansible.builtin.systemd_service:
+          name: docker
+          enabled: true
+
+    - name: Set full access (0777) permissions on /var/run/docker.sock
+      ansible.builtin.file:
+        path: /var/run/docker.sock
+        mode: '0777'
+
