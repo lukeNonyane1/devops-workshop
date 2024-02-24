@@ -140,7 +140,7 @@ module "eks_sg" {
 
 module "eks_cluster" {
   source = "../eks"
-  subnet_ids = [aws_subnet.devops_workshop-subnet1.id,aws_subnet.devops_workshop-subnet2.id]
+  subnet_ids = [aws_subnet.devops-workshop-subnet1.id,aws_subnet.devops-workshop-subnet2.id]
   sg_ids = module.eks_sg.security_group_public
   vpc_id = aws_vpc.devops-workshop-vpc.id
 }
