@@ -32,3 +32,13 @@
     - name: Add mvn to bash path
       ansible.builtin.shell: |
         export PATH=$PATH:/opt/apache-maven-3.9.6/bin
+
+    - name: Install docker
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: Start docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
