@@ -1,0 +1,146 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "demo-server" {
+  ami           = "ami-0c7217cdde317cfec" # ubuntu 22
+  instance_type = "t2.micro"
+  key_name      = "devops_workshop"
+  # security_groups = [ "demo-sg" ]
+  vpc_security_group_ids = [ aws_security_group.demo-sg.id ]
+  subnet_id = aws_subnet.devops-workshop-subnet1.id
+for_each = toset(["jenkins-controller","ansible-controller"])
+  tags = {
+    "Name" = "${each.key}"
+  }
+}
+
+resource "aws_instance" "builder" {
+  ami           = "ami-0c7217cdde317cfec" # ubuntu 22
+  instance_type = "t2.medium"
+  key_name      = "devops_workshop"
+  # security_groups = [ "demo-sg" ]
+  vpc_security_group_ids = [ aws_security_group.demo-sg.id ]
+  subnet_id = aws_subnet.devops-workshop-subnet1.id
+for_each = toset(["jenkins-builder"])
+  tags = {
+    "Name" = "${each.key}"
+  }
+}
+
+# Networking
+
+resource "aws_security_group" "demo-sg" {
+  name        = "demo-sg"
+  description = "Allow ssh"
+  vpc_id = aws_vpc.devops-workshop-vpc.id
+  
+  tags = {
+    Name = "allow_ssh"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_ssh_ipv4" {
+  security_group_id = aws_security_group.demo-sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 22
+  ip_protocol       = "tcp"
+  to_port           = 22
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_8080" {
+  security_group_id = aws_security_group.demo-sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 8080
+  ip_protocol       = "tcp"
+  to_port           = 8080
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_local" {
+  security_group_id = aws_security_group.demo-sg.id
+  cidr_ipv4         = aws_vpc.devops-workshop-vpc.cidr_block
+  from_port         = 0
+  ip_protocol       = "tcp"
+  to_port           = 0
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
+  security_group_id = aws_security_group.demo-sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1" # semantically equivalent to all ports
+}
+
+##############
+#    VPC     
+##############
+resource "aws_vpc" "devops-workshop-vpc" {
+  cidr_block = "10.1.0.0/16"
+  tags = {
+    "Name" = "devops-workshop"
+  }
+}
+
+resource "aws_subnet" "devops-workshop-subnet1" {
+  vpc_id     = aws_vpc.devops-workshop-vpc.id
+  cidr_block = "10.1.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone = "us-east-1a"
+
+  tags = {
+    Name = "devops-workshop-public-subnet1"
+  }
+}
+
+resource "aws_subnet" "devops-workshop-subnet2" {
+  vpc_id     = aws_vpc.devops-workshop-vpc.id
+  cidr_block = "10.1.2.0/24"
+  map_public_ip_on_launch = true
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "devops-workshop-public-subnet2"
+  }
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.devops-workshop-vpc.id
+
+  tags = {
+    Name = "devops-workshop-vpc-igw"
+  }
+}
+
+resource "aws_route_table" "devops-workshop-vpc-public-route-table" {
+  vpc_id = aws_vpc.devops-workshop-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "devops-workshop-vpc-public-route-table"
+  }
+}
+
+resource "aws_route_table_association" "devops-workshop-subnet1-association" {
+  subnet_id      = aws_subnet.devops-workshop-subnet1.id
+  route_table_id = aws_route_table.devops-workshop-vpc-public-route-table.id
+}
+
+resource "aws_route_table_association" "devops-workshop-subnet2-association" {
+  subnet_id      = aws_subnet.devops-workshop-subnet2.id
+  route_table_id = aws_route_table.devops-workshop-vpc-public-route-table.id
+}
+
+module "eks_sg" {
+  source = "../sg_eks"
+  vpc_id = aws_vpc.devops-workshop-vpc.id
+}
+
+module "eks_cluster" {
+  source = "../eks"
+  subnet_ids = [aws_subnet.devops_workshop-subnet1.id,aws_subnet.devops_workshop-subnet2.id]
+  sg_ids = module.eks_sg.security_group_public
+  vpc_id = aws_vpc.devops-workshop-vpc.id
+}
