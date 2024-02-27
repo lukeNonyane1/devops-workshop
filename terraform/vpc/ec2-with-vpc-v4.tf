@@ -133,6 +133,8 @@ resource "aws_route_table_association" "devops-workshop-subnet2-association" {
   route_table_id = aws_route_table.devops-workshop-vpc-public-route-table.id
 }
 
+###### EKS ######
+
 module "eks_sg" {
   source = "../sg_eks"
   vpc_id = aws_vpc.devops-workshop-vpc.id
